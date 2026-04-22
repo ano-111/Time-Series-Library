@@ -17,21 +17,21 @@ if __name__ == '__main__':
     # basic config
     parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
                         help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
-    parser.add_argument('--is_training', type=int, required=True, default=1, help='status')
-    parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')
+    parser.add_argument('--is_training', type=int, required=True, default=1, help='status')                #1=训练+测试，0=仅测试（需已有模型的checkpoint）
+    parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')            #实验标识符，用于命名日志文件夹和结果文件
     parser.add_argument('--model', type=str, required=True, default='Autoformer',
-                        help='model name, options: [Autoformer, Transformer, TimesNet]')
+                        help='model name, options: [Autoformer, Transformer, TimesNet]')                                #指定要使用的模型名，必须与 models/ 目录下的模型注册名一致。
 
     # data loader
-    parser.add_argument('--data', type=str, required=True, default='ETTh1', help='dataset type')
-    parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-    parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')
+    parser.add_argument('--data', type=str, required=True, default='ETTh1', help='dataset type')            #数据集类型，必设
+    parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')  #数据文件所在目录
+    parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')                     #具体数据文件名
     parser.add_argument('--features', type=str, default='M',
-                        help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
-    parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
+                        help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')  #预测任务的特征模式，分类不考虑
+    parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')                                                                 #预测目标变量名，分类不考虑
     parser.add_argument('--freq', type=str, default='h',
-                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
-    parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
+                        help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')    #时间特征编码的频率，分类不考虑
+    parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')              #模型保存路径
 
     # forecasting task
     parser.add_argument('--seq_len', type=int, default=96, help='input sequence length')
@@ -85,18 +85,18 @@ if __name__ == '__main__':
                         help='the length of segmen-wise iteration of SegRNN')
 
     # optimization
-    parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')
-    parser.add_argument('--itr', type=int, default=1, help='experiments times')
-    parser.add_argument('--train_epochs', type=int, default=10, help='train epochs')
+    parser.add_argument('--num_workers', type=int, default=10, help='data loader num workers')      # 数据加载器线程数
+    parser.add_argument('--itr', type=int, default=1, help='experiments times')             #实验次数
+    parser.add_argument('--train_epochs', type=int, default=10, help='train epochs')        #训练轮数
     parser.add_argument('--batch_size', type=int, default=32, help='batch size of train input data')
-    parser.add_argument('--patience', type=int, default=3, help='early stopping patience')
+    parser.add_argument('--patience', type=int, default=3, help='early stopping patience')      #早停轮数
     parser.add_argument('--learning_rate', type=float, default=0.0001, help='optimizer learning rate')
-    parser.add_argument('--des', type=str, default='test', help='exp description')
-    parser.add_argument('--loss', type=str, default='MSE', help='loss function')
-    parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')
-    parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
+    parser.add_argument('--des', type=str, default='test', help='exp description')          #实验描述
+    parser.add_argument('--loss', type=str, default='MSE', help='loss function')            #分类任务重会指定为交叉熵
+    parser.add_argument('--lradj', type=str, default='type1', help='adjust learning rate')      #学习率调整策略
+    parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)         #是否使用自动混合精度训练
 
-    # GPU
+    # GPU       单卡运行无需指定任何GPU参数
     parser.add_argument('--use_gpu', action='store_true', default=True, help='use gpu (default: on)')
     parser.add_argument('--no_use_gpu', action='store_false', dest='use_gpu', help='disable gpu (force cpu)')
     parser.add_argument('--gpu', type=int, default=0, help='gpu')
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
     parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multile gpus')
 
-    # de-stationary projector params
+    # de-stationary projector params        用于预测任务
     parser.add_argument('--p_hidden_dims', type=int, nargs='+', default=[128, 128],
                         help='hidden layer dimensions of projector (List)')
     parser.add_argument('--p_hidden_layers', type=int, default=2, help='number of hidden layers in projector')
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--use_dtw', action='store_true', default=False,
                         help='enable dtw metric (time consuming; default: off)')
 
-    # Augmentation
+    # Augmentation         数据增强模块，默认是全部关闭的
     parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")
     parser.add_argument('--seed', type=int, default=2, help="Randomization seed")
     parser.add_argument('--jitter', default=False, action="store_true", help="Jitter preset augmentation")
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                         help="Discrimitive shapeDTW warp preset augmentation")
     parser.add_argument('--extra_tag', type=str, default="", help="Anything extra")
 
-    # TimeXer
+    # TimeXer           预测任务使用Transformer时提升计算效率的，分类不用考虑
     parser.add_argument('--patch_len', type=int, default=16, help='patch length')
 
     # GCN
@@ -148,10 +148,11 @@ if __name__ == '__main__':
     parser.add_argument('--conv_channel', type=int, default=32, help='')
     parser.add_argument('--skip_channel', type=int, default=32, help='')
 
+    # Dlinear模型中控制多变量的建模方式
     parser.add_argument('--individual', action='store_true', default=False,
                         help='DLinear: a linear layer for each variate(channel) individually')
 
-    # TimeFilter
+    # TimeFilter        时序预测模型
     parser.add_argument('--alpha', type=float, default=0.1, help='KNN for Graph Construction')
     parser.add_argument('--top_p', type=float, default=0.5, help='Dynamic Routing in MoE')
     parser.add_argument('--pos', type=int, choices=[0, 1], default=1, help='Positional Embedding. Set pos to 0 or 1')

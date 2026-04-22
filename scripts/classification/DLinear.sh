@@ -15,10 +15,10 @@ python -u run.py \
   --d_ff 256 \
   --top_k 3 \
   --des 'Exp' \
-  --itr 1 \
+  --itr 1 \             #迭代次数
   --learning_rate 0.001 \
   --train_epochs 100 \
-  --patience 10
+  --patience 10         #早停耐心值
 
 python -u run.py \
   --task_name classification \
