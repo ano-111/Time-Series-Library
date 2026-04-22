@@ -24,6 +24,7 @@ class Exp_Basic(object):
 
     def _scan_models_directory(self):
         """
+        自动遍历models文件夹下的模型，并建立对应的字典（模型名称：模型路径）
         Automatically scan all .py files in the models folder
         """
         model_map = {}
@@ -78,6 +79,7 @@ class Exp_Basic(object):
 
 class LazyModelDict(dict):
     """
+    LazyModelDict 是一个智能惰性加载字典，它的核心作用是：只有当你真正要用某个模型时，才去硬盘上读取并导入对应的 Python 模块，而不是一开始就把 models/ 目录下所有模型全部加载到内存。
     Smart Lazy-Loading Dictionary
     """
     def __init__(self, model_map):

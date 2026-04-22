@@ -23,8 +23,8 @@ class Exp_Classification(Exp_Basic):
         test_data, test_loader = self._get_data(flag='TEST')
         self.args.seq_len = max(train_data.max_seq_len, test_data.max_seq_len)
         self.args.pred_len = 0
-        self.args.enc_in = train_data.feature_df.shape[1]
-        self.args.num_class = len(train_data.class_names)
+        self.args.enc_in = train_data.feature_df.shape[1]           # 输入变量数
+        self.args.num_class = len(train_data.class_names)           # 类别数
         # model init
         model = self.model_dict[self.args.model](self.args).float()
         if self.args.use_multi_gpu and self.args.use_gpu:
@@ -32,6 +32,7 @@ class Exp_Classification(Exp_Basic):
         return model
 
     def _get_data(self, flag):
+        # 构建数据集并加载到加载器中
         data_set, data_loader = data_provider(self.args, flag)
         return data_set, data_loader
 
@@ -41,10 +42,16 @@ class Exp_Classification(Exp_Basic):
         return model_optim
 
     def _select_criterion(self):
+        '''
+        这里将损失函数直接指定为交叉熵函数
+        '''
         criterion = nn.CrossEntropyLoss()
         return criterion
 
     def vali(self, vali_data, vali_loader, criterion):
+        '''
+        计算损失和准确率
+        '''
         total_loss = []
         preds = []
         trues = []
@@ -79,7 +86,7 @@ class Exp_Classification(Exp_Basic):
     def train(self, setting):
         train_data, train_loader = self._get_data(flag='TRAIN')
         vali_data, vali_loader = self._get_data(flag='TEST')
-        test_data, test_loader = self._get_data(flag='TEST')
+        test_data, test_loader = self._get_data(flag='TEST')        #复用测试集作为验证集
 
         path = os.path.join(self.args.checkpoints, setting)
         if not os.path.exists(path):
@@ -126,7 +133,7 @@ class Exp_Classification(Exp_Basic):
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
-            vali_loss, val_accuracy = self.vali(vali_data, vali_loader, criterion)
+            vali_loss, val_accuracy = self.vali(vali_data, vali_loader, criterion)          #复用测试集作为验证集
             test_loss, test_accuracy = self.vali(test_data, test_loader, criterion)
 
             print(
