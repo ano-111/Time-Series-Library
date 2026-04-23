@@ -660,6 +660,9 @@ class SMDSegLoader(Dataset):
 
 
 class SWATSegLoader(Dataset):
+    '''
+    [总时间步, 传感器数] → 切片成 [N, win_size, 传感器数]
+    '''
     def __init__(self, args, root_path, win_size, step=1, flag="train"):
         self.flag = flag
         self.step = step

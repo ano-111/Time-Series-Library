@@ -15,12 +15,29 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='TimesNet')
 
     # basic config
-    parser.add_argument('--task_name', type=str, required=True, default='long_term_forecast',
-                        help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')
+    parser.add_argument('--task_name', type=str, required=False, default='classification',
+                        help='task name, options:[long_term_forecast, short_term_forecast, imputation, classification, anomaly_detection]')         #改为默认进行分类任务
     parser.add_argument('--is_training', type=int, required=True, default=1, help='status')                #1=训练+测试，0=仅测试（需已有模型的checkpoint）
     parser.add_argument('--model_id', type=str, required=True, default='test', help='model id')            #实验标识符，用于命名日志文件夹和结果文件
     parser.add_argument('--model', type=str, required=True, default='Autoformer',
                         help='model name, options: [Autoformer, Transformer, TimesNet]')                                #指定要使用的模型名，必须与 models/ 目录下的模型注册名一致。
+    '''
+    data_dict = {
+    'ETTh1': Dataset_ETT_hour,
+    'ETTh2': Dataset_ETT_hour,
+    'ETTm1': Dataset_ETT_minute,
+    'ETTm2': Dataset_ETT_minute,
+    'custom': Dataset_Custom,
+    'm4': Dataset_M4,
+    'PSM': PSMSegLoader,
+    'MSL': MSLSegLoader,
+    'SMAP': SMAPSegLoader,
+    'SMD': SMDSegLoader,
+    'SWAT': SWATSegLoader,
+    'UEA': UEAloader
+}
+    '''
+
 
     # data loader
     parser.add_argument('--data', type=str, required=True, default='ETTh1', help='dataset type')            #数据集类型，必设
