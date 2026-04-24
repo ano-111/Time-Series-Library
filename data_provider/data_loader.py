@@ -14,6 +14,9 @@ import warnings
 from utils.augmentation import run_augmentation_single
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
+
+from sklearn.preprocessing import StandardScaler,MinMaxScaler,Normalizer
+
 warnings.filterwarnings('ignore')
 
 HUGGINGFACE_REPO = "thuml/Time-Series-Library"
@@ -851,3 +854,88 @@ class UEAloader(Dataset):
 
     def __len__(self):
         return len(self.all_IDs)
+
+
+class AluminumAnodeLoader(Dataset):
+    def handle_missing_data(self, df):
+        nan_ratios=df.groupby('id')['value'].apply(lambda x: x.isna().mean())
+        valid_ids=nan_ratios[nan_ratios<0.1].index
+        df=df[df['id'].isin(valid_ids)]
+        df.loc[:,'value']=df.groupby('id')['value'].transform(lambda x: x.interpolate(method='linear',limit_direction='both'))
+        return df
+    def _remove_outliers_by_diff(self, df, threshold=3.0):
+        def fix_series(series):
+            values = series.values.copy()
+            if len(values) < 3:
+                return series
+            diff = np.abs(np.diff(values, prepend=values[0]))
+            mean_diff = np.mean(diff)
+            std_diff = np.std(diff)
+            if std_diff == 0:
+                return series
+            outlier_mask = diff > (mean_diff + threshold * std_diff)
+            values[outlier_mask] = np.nan
+            # 关键修复：保留原始索引
+            new_series = pd.Series(values, index=series.index)
+            new_series = new_series.interpolate(method='linear', limit_direction='both')
+            return new_series
+
+        df['value'] = df.groupby('id')['value'].transform(fix_series)
+        df = df.dropna(subset=['value'])
+        return df
+    def __init__(self, args,root_path, flag='TRAIN',diff_std_multiplier=3.0,norm_type=None):
+        #diff_std_multiplier为产本标准差的倍数，值越大过滤的异常数据越少
+        self.args = args
+        train_path=os.path.join(root_path,'data_processed.csv')
+        test_path=os.path.join(root_path,'data_processed_before.csv')
+        val_path=os.path.join(root_path,'data_processed_before.csv')
+        self.flag = flag
+        if self.flag == "TRAIN":
+            df=pd.read_csv(train_path)
+        elif self.flag == "TEST":
+            df=pd.read_csv(test_path)
+        elif self.flag == "VAL":
+            df=pd.read_csv(val_path)
+        df=self.handle_missing_data(df)
+        if diff_std_multiplier!=None:
+            df=self._remove_outliers_by_diff(df,threshold=diff_std_multiplier)
+        self.max_seq_len = 2880
+        self.feature_df=df[['value']]
+        self.class_names=df['异常'].unique()
+        ids=df['id'].unique()
+        self.ids=ids
+        self.samples=[df.loc[df['id']==id,'value'].values for id in ids]
+        self.labels=[(df.loc[df['id']==id,'异常']).values[0] for id in ids]
+        # 归一化
+        if norm_type == 'standardization':
+            X = np.stack(self.samples, axis=0)
+            scaler = StandardScaler()
+            X_norm = scaler.fit_transform(X)
+            self.samples = [X_norm[i] for i in range(X_norm.shape[0])]
+
+        elif norm_type == 'minmax':
+            X = np.stack(self.samples, axis=0)
+            scaler = MinMaxScaler()
+            X_norm = scaler.fit_transform(X)
+            self.samples = [X_norm[i] for i in range(X_norm.shape[0])]
+
+        elif norm_type == 'l2':
+            # 使用 L2 范数归一化（每个样本向量长度变为 1）
+            X = np.stack(self.samples, axis=0)
+            normalizer = Normalizer(norm='l2')
+            X_norm = normalizer.fit_transform(X)
+            self.samples = [X_norm[i] for i in range(X_norm.shape[0])]
+
+        elif norm_type == 'per_sample_std':
+            self.samples = [(s - s.mean()) / (s.std() + 1e-8) for s in self.samples]
+
+        elif norm_type == 'per_sample_minmax':
+            self.samples = [(s - s.min()) / (s.max() - s.min() + 1e-8) for s in self.samples]
+        elif norm_type == None:
+            pass
+        self.samples=[(torch.from_numpy(s)).unsqueeze(1) for s in self.samples]
+        self.labels=[(torch.tensor(l)) for l in self.labels]
+    def __getitem__(self, idx):
+        return self.samples[idx], self.labels[idx]
+    def __len__(self):
+        return len(self.ids)
