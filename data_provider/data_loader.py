@@ -11,7 +11,7 @@ from data_provider.m4 import M4Dataset, M4Meta
 from data_provider.uea import subsample, interpolate_missing, Normalizer
 from sktime.datasets import load_from_tsfile_to_dataframe
 import warnings
-from utils.augmentation import run_augmentation_single
+from utils.augmentation import run_augmentation_single,run_augmentation
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
 
@@ -856,6 +856,97 @@ class UEAloader(Dataset):
         return len(self.all_IDs)
 
 
+# class AluminumAnodeLoader(Dataset):
+#     def handle_missing_data(self, df):
+#         nan_ratios=df.groupby('id')['value'].apply(lambda x: x.isna().mean())
+#         valid_ids=nan_ratios[nan_ratios<0.1].index
+#         df=df[df['id'].isin(valid_ids)]
+#         df.loc[:,'value']=df.groupby('id')['value'].transform(lambda x: x.interpolate(method='linear',limit_direction='both'))
+#         return df
+#     def _remove_outliers_by_diff(self, df, threshold=3.0):
+#         def fix_series(series):
+#             values = series.values.copy()
+#             if len(values) < 3:
+#                 return series
+#             diff = np.abs(np.diff(values, prepend=values[0]))
+#             mean_diff = np.mean(diff)
+#             std_diff = np.std(diff)
+#             if std_diff == 0:
+#                 return series
+#             outlier_mask = diff > (mean_diff + threshold * std_diff)
+#             values[outlier_mask] = np.nan
+#             # 关键修复：保留原始索引
+#             new_series = pd.Series(values, index=series.index)
+#             new_series = new_series.interpolate(method='linear', limit_direction='both')
+#             return new_series
+#
+#         df['value'] = df.groupby('id')['value'].transform(fix_series)
+#         df = df.dropna(subset=['value'])
+#         return df
+#     def __init__(self, args,root_path, flag='TRAIN',diff_std_multiplier=3.0,norm_type=None):
+#         #diff_std_multiplier为产本标准差的倍数，值越大过滤的异常数据越少
+#         from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
+#         self.args = args
+#         train_path=os.path.join(root_path,'data_processed.csv')
+#         test_path=os.path.join(root_path,'data_processed_before.csv')
+#         val_path=os.path.join(root_path,'data_processed_before.csv')
+#         self.flag = flag
+#         if self.flag == "TRAIN":
+#             df=pd.read_csv(train_path)
+#         elif self.flag == "TEST":
+#             df=pd.read_csv(test_path)
+#         elif self.flag == "VAL":
+#             df=pd.read_csv(val_path)
+#         df=self.handle_missing_data(df)
+#         if diff_std_multiplier!=None:
+#             df=self._remove_outliers_by_diff(df,threshold=diff_std_multiplier)
+#         self.max_seq_len = 2880
+#         self.feature_df=df[['value']]
+#         self.class_names=df['异常'].unique()
+#         ids=df['id'].unique()
+#         self.ids=ids
+#         self.samples=[df.loc[df['id']==id,'value'].values for id in ids]
+#         self.labels=[(df.loc[df['id']==id,'异常']).values[0] for id in ids]
+#         # 归一化
+#         if norm_type == 'standardization':
+#             X = np.stack(self.samples, axis=0)
+#             scaler = StandardScaler()
+#             X_norm = scaler.fit_transform(X)
+#             self.samples = [X_norm[i] for i in range(X_norm.shape[0])]
+#
+#         elif norm_type == 'minmax':
+#             X = np.stack(self.samples, axis=0)
+#             scaler = MinMaxScaler()
+#             X_norm = scaler.fit_transform(X)
+#             self.samples = [X_norm[i] for i in range(X_norm.shape[0])]
+#
+#         elif norm_type == 'l2':
+#             # 使用 L2 范数归一化（每个样本向量长度变为 1）
+#             X = np.stack(self.samples, axis=0)
+#             normalizer = Normalizer(norm='l2')
+#             X_norm = normalizer.fit_transform(X)
+#             self.samples = [X_norm[i] for i in range(X_norm.shape[0])]
+#
+#         elif norm_type == 'per_sample_std':
+#             self.samples = [(s - s.mean()) / (s.std() + 1e-8) for s in self.samples]
+#
+#         elif norm_type == 'per_sample_minmax':
+#             self.samples = [(s - s.min()) / (s.max() - s.min() + 1e-8) for s in self.samples]
+#         elif norm_type == None:
+#             pass
+#         # self.samples=[(torch.from_numpy(s)).unsqueeze(1) for s in self.samples]
+#         # self.labels=[(torch.tensor(l)) for l in self.labels]
+#     def __getitem__(self, idx):
+#         #增加数据增强
+#         if self.flag == "TRAIN" and self.args.augmentation_ratio > 0:
+#             self.sample, self.label, augmentation_tags = run_augmentation_single(self.samples[idx][:,np.newaxis], self.labels[idx], self.args)
+#             print(augmentation_tags)
+#         else:
+#             self.sample, self.label = self.samples[idx].unsqueeze(1), self.labels[idx]
+#         return torch.from_numpy(self.sample), torch.tensor(self.label)
+#     def __len__(self):
+#         return len(self.ids)
+
 class AluminumAnodeLoader(Dataset):
     def handle_missing_data(self, df):
         nan_ratios=df.groupby('id')['value'].apply(lambda x: x.isna().mean())
@@ -883,7 +974,7 @@ class AluminumAnodeLoader(Dataset):
         df['value'] = df.groupby('id')['value'].transform(fix_series)
         df = df.dropna(subset=['value'])
         return df
-    def __init__(self, args,root_path, flag='TRAIN',diff_std_multiplier=3.0,norm_type=None):
+    def __init__(self, args,root_path, flag='TRAIN',diff_std_multiplier=100,norm_type=None):
         #diff_std_multiplier为产本标准差的倍数，值越大过滤的异常数据越少
         from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
         self.args = args
@@ -898,8 +989,8 @@ class AluminumAnodeLoader(Dataset):
         elif self.flag == "VAL":
             df=pd.read_csv(val_path)
         df=self.handle_missing_data(df)
-        if diff_std_multiplier!=None:
-            df=self._remove_outliers_by_diff(df,threshold=diff_std_multiplier)
+        if self.args.diff_std:
+            df=self._remove_outliers_by_diff(df,threshold=self.args.diff_std_multiplier)
         self.max_seq_len = 2880
         self.feature_df=df[['value']]
         self.class_names=df['异常'].unique()
@@ -934,15 +1025,23 @@ class AluminumAnodeLoader(Dataset):
             self.samples = [(s - s.min()) / (s.max() - s.min() + 1e-8) for s in self.samples]
         elif norm_type == None:
             pass
+        if self.flag == "TRAIN" and self.args.augmentation_ratio > 0 and self.args.num_sample_aug==True:
+            self.samples=[sample[:,np.newaxis] for sample in self.samples]
+            self.samples=np.array(self.samples)
+            self.labels=np.array(self.labels)
+            self.samples,self.labels,self.augmentation_tags=run_augmentation(self.samples,self.labels,self.args)
+            self.feature_df=self.samples.reshape(-1,1)          #后面再exp的分类模块中会用到feature_df的shape数据，feature_df.shape[1]用来获取样本的种类数
         # self.samples=[(torch.from_numpy(s)).unsqueeze(1) for s in self.samples]
         # self.labels=[(torch.tensor(l)) for l in self.labels]
     def __getitem__(self, idx):
         #增加数据增强
-        if self.flag == "TRAIN" and self.args.augmentation_ratio > 0:
+        if self.flag == "TRAIN" and self.args.augmentation_ratio > 0 and self.args.num_sample_aug==False:
             self.sample, self.label, augmentation_tags = run_augmentation_single(self.samples[idx][:,np.newaxis], self.labels[idx], self.args)
             print(augmentation_tags)
+        elif self.flag == "TRAIN" and self.args.augmentation_ratio > 0 and self.args.num_sample_aug==True:
+            self.sample, self.label = self.samples[idx,:,:], self.labels[idx]
         else:
-            self.sample, self.label = self.samples[idx].unsqueeze(1), self.labels[idx]
+            self.sample, self.label = self.samples[idx][:,np.newaxis], self.labels[idx]
         return torch.from_numpy(self.sample), torch.tensor(self.label)
     def __len__(self):
         return len(self.ids)

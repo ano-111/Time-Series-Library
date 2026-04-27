@@ -131,6 +131,12 @@ if __name__ == '__main__':
                         help='enable dtw metric (time consuming; default: off)')
 
     # Augmentation         数据增强模块，默认是全部关闭的
+
+    parser.add_argument('--num_sample_aug',action='store_true',default=False,help='Number of samples to augment')           #自设的，用于是否在分类中使用增强后扩充样本
+    parser.add_argument('--diff_std',action='store_true',default=False,help='Number of samples to augment')
+    parser.add_argument('--diff_std_multiplier',action='int',default=100,help='Number of samples to augment')
+
+
     parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")
     parser.add_argument('--seed', type=int, default=2, help="Randomization seed")
     parser.add_argument('--jitter', default=False, action="store_true", help="Jitter preset augmentation")
