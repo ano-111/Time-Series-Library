@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--num_sample_aug',action='store_true',default=False,help='Number of samples to augment')           #自设的，用于是否在分类中使用增强后扩充样本
     parser.add_argument('--diff_std',action='store_true',default=False,help='Number of samples to augment')
-    parser.add_argument('--diff_std_multiplier',action='int',default=100,help='Number of samples to augment')
+    parser.add_argument('--diff_std_multiplier',type=int,default=100,help='Number of samples to augment')
 
 
     parser.add_argument('--augmentation_ratio', type=int, default=0, help="How many times to augment")

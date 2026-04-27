@@ -1037,7 +1037,7 @@ class AluminumAnodeLoader(Dataset):
         #增加数据增强
         if self.flag == "TRAIN" and self.args.augmentation_ratio > 0 and self.args.num_sample_aug==False:
             self.sample, self.label, augmentation_tags = run_augmentation_single(self.samples[idx][:,np.newaxis], self.labels[idx], self.args)
-            print(augmentation_tags)
+            # print(augmentation_tags)
         elif self.flag == "TRAIN" and self.args.augmentation_ratio > 0 and self.args.num_sample_aug==True:
             self.sample, self.label = self.samples[idx,:,:], self.labels[idx]
         else:
