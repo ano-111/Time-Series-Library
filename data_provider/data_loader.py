@@ -934,9 +934,15 @@ class AluminumAnodeLoader(Dataset):
             self.samples = [(s - s.min()) / (s.max() - s.min() + 1e-8) for s in self.samples]
         elif norm_type == None:
             pass
-        self.samples=[(torch.from_numpy(s)).unsqueeze(1) for s in self.samples]
-        self.labels=[(torch.tensor(l)) for l in self.labels]
+        # self.samples=[(torch.from_numpy(s)).unsqueeze(1) for s in self.samples]
+        # self.labels=[(torch.tensor(l)) for l in self.labels]
     def __getitem__(self, idx):
-        return self.samples[idx], self.labels[idx]
+        #增加数据增强
+        if self.flag == "TRAIN" and self.args.augmentation_ratio > 0:
+            self.sample, self.label, augmentation_tags = run_augmentation_single(self.samples[idx][:,np.newaxis], self.labels[idx], self.args)
+            print(augmentation_tags)
+        else:
+            self.sample, self.label = self.samples[idx].unsqueeze(1), self.labels[idx]
+        return torch.from_numpy(self.sample), torch.tensor(self.label)
     def __len__(self):
         return len(self.ids)
