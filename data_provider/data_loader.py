@@ -15,7 +15,7 @@ from utils.augmentation import run_augmentation_single
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
 
-from sklearn.preprocessing import StandardScaler,MinMaxScaler,Normalizer
+
 
 warnings.filterwarnings('ignore')
 
@@ -885,6 +885,7 @@ class AluminumAnodeLoader(Dataset):
         return df
     def __init__(self, args,root_path, flag='TRAIN',diff_std_multiplier=3.0,norm_type=None):
         #diff_std_multiplier为产本标准差的倍数，值越大过滤的异常数据越少
+        from sklearn.preprocessing import StandardScaler, MinMaxScaler, Normalizer
         self.args = args
         train_path=os.path.join(root_path,'data_processed.csv')
         test_path=os.path.join(root_path,'data_processed_before.csv')
